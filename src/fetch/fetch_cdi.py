@@ -1,5 +1,4 @@
 import pandas as pd
-import json
 import requests
 
 
@@ -12,10 +11,7 @@ def get_cdi(day, month, year):
     }
 
     response = requests.get(url, params=params)
-    data = response.json()
 
+    data = response.json()
     df = pd.DataFrame(data)
-    df["valor"] = df["valor"].astype(float)
-    valor = df["valor"].astype(float)
-    print(df.head())
-    return valor[0].astype(float)
+    return df["valor"].astype(float)[0]
