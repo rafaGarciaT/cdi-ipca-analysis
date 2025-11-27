@@ -1,5 +1,8 @@
 from src.fetch.fetch_cdi import get_cdi
 from src.fetch.fetch_ipca import get_ipca
+from src.utils.date_utils import date_info
+import json
+from pathlib import Path
 
 
 class Pipeline:
@@ -11,16 +14,21 @@ class Pipeline:
             "sqlite": self._load_tosqlite
         }
 
-    def run(self, day, month, year):
+    def run(self):
         print("=== INICIANDO PIPELINE ===>")
 
         print("> Buscando dados...") # -------- FETCH --------
+        day, month, year = self._fetch_date()
+
         dados_cdi = self._fetch_cdi(day, month, year)
-        dados_icpa = self._fetch_icpa(month, year)
+        fpath_cdi = self._save_raw(dados_cdi, "cdi", day, month, year)
+
+        dados_ipca = self._fetch_ipca(month, year)
+        fpath_ipca = self._save_raw(dados_ipca, "dados_ipca", day, month, year)
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
         rentabilidade = self._transform(dados_cdi)
-        inflacao = self._transform(dados_icpa)
+        inflacao = self._transform(dados_ipca)
 
         print("> Salvando resultados...") # -------- LOAD --------
         self._load(rentabilidade)
@@ -31,11 +39,29 @@ class Pipeline:
     #  FETCH
     # ============================
 
+    def _fetch_date(self):
+        date_dict = date_info()
+        return date_dict("d"), date_dict("m"), date_dict("a")
+
+
     def _fetch_cdi(self, day, month, year):
         return get_cdi(day, month, year) # float
 
-    def _fetch_icpa(self,month, year):
+
+    def _fetch_ipca(self, month, year):
         return get_ipca(month, year) # float
+
+
+    def _save_raw(self, data, name, day, month, year):
+        folder = Path("data/raw") / name
+        folder.mkdir(parents=True, exist_ok=True)
+
+        filepath = folder / f"{name}_{year}-{month}-{day}.json"
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(str(data), f, indent=2, ensure_ascii=False)
+
+        return str(filepath)
 
     # ============================
     #  TRANSFORM
