@@ -1,6 +1,6 @@
 from src.fetch.fetch_cdi import get_cdi
 from src.fetch.fetch_ipca import get_ipca
-from src.utils.date_utils import date_info
+from src.utils.date_utils import date_info, is_business_day
 import json
 from pathlib import Path
 
@@ -17,14 +17,28 @@ class Pipeline:
     def run(self):
         print("=== INICIANDO PIPELINE ===>")
 
+        print("> Preparando...") # -------- PREPARE --------
+
+        dt = self._fetch_date()
+
+        if is_business_day(dt) is False:
+            print("Data informada não é um dia útil. Encerrando pipeline.")
+            return
+
+        day = dt.day
+        month = dt.month
+        year = dt.year
+
+        # todo: validar se data já foi processada
+
         print("> Buscando dados...") # -------- FETCH --------
-        day, month, year = self._fetch_date()
 
         dados_cdi = self._fetch_cdi(day, month, year)
         fpath_cdi = self._save_raw(dados_cdi, "cdi", day, month, year)
 
         dados_ipca = self._fetch_ipca(month, year)
         fpath_ipca = self._save_raw(dados_ipca, "dados_ipca", day, month, year)
+
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
         rentabilidade = self._transform(dados_cdi)
@@ -40,8 +54,7 @@ class Pipeline:
     # ============================
 
     def _fetch_date(self):
-        date_dict = date_info()
-        return date_dict("d"), date_dict("m"), date_dict("a")
+        return date_info()
 
 
     def _fetch_cdi(self, day, month, year):
@@ -53,7 +66,7 @@ class Pipeline:
 
 
     def _save_raw(self, data, name, day, month, year):
-        folder = Path("data/raw") / name
+        folder = Path("../data/raw") / name
         folder.mkdir(parents=True, exist_ok=True)
 
         filepath = folder / f"{name}_{year}-{month}-{day}.json"

@@ -1,13 +1,9 @@
 from datetime import datetime
+from pandas import bdate_range
 
 
 def date_info():
-    now = datetime.now()
-    return {
-        "d": now.day,
-        "m": now.month,
-        "a": now.year,
-        "h": now.hour,
-        "mn": now.minute,
-        "s": now.second,
-    }
+    return datetime.now()
+
+def is_business_day(date):
+    return bool(len(bdate_range(date, date)))
