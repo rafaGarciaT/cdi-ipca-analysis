@@ -11,7 +11,7 @@ class Pipeline:
 
         self.loaders = {
             "excel": self._load_to_excel,
-            "sqlite": self._load_tosqlite
+            "sqlite": self._load_to_sqlite
         }
 
     def run(self):
@@ -23,7 +23,7 @@ class Pipeline:
 
         if is_business_day(dt) is False:
             print("Data informada não é um dia útil. Encerrando pipeline.")
-            return
+
 
         day = dt.day
         month = dt.month
@@ -38,7 +38,6 @@ class Pipeline:
 
         dados_ipca = self._fetch_ipca(month, year)
         fpath_ipca = self._save_raw(dados_ipca, "dados_ipca", day, month, year)
-
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
         rentabilidade = self._transform(dados_cdi)
@@ -66,13 +65,20 @@ class Pipeline:
 
 
     def _save_raw(self, data, name, day, month, year):
-        folder = Path("../data/raw") / name
+        pr_root = Path(__file__).parent.parent
+        folder = pr_root / "data" / "raw" / name
         folder.mkdir(parents=True, exist_ok=True)
 
         filepath = folder / f"{name}_{year}-{month}-{day}.json"
 
+        payload = {
+            "date": f"{year}-{month}-{day}",
+            "type": name,
+            "value": data
+        }
+
         with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(str(data), f, indent=2, ensure_ascii=False)
+            json.dump(payload, f, indent=2, ensure_ascii=False)
 
         return str(filepath)
 
