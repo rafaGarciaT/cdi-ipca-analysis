@@ -37,7 +37,7 @@ class Pipeline:
         fpath_cdi = self._save_raw(dados_cdi, "cdi", day, month, year)
 
         dados_ipca = self._fetch_ipca(month, year)
-        fpath_ipca = self._save_raw(dados_ipca, "dados_ipca", day, month, year)
+        fpath_ipca = self._save_raw(dados_ipca, "ipca", day, month, year)
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
         rentabilidade = self._transform(dados_cdi)
@@ -69,13 +69,24 @@ class Pipeline:
         folder = pr_root / "data" / "raw" / name
         folder.mkdir(parents=True, exist_ok=True)
 
-        filepath = folder / f"{name}_{year}-{month}-{day}.json"
+        if name == "cdi":
+            filepath = folder / f"{name}_{year}-{month}-{day}.json"
 
-        payload = {
-            "date": f"{year}-{month}-{day}",
-            "type": name,
-            "value": data
-        }
+            payload = {
+                "date": f"{year}-{month}-{day}",
+                "type": name,
+                "value": data
+            }
+        elif name == "ipca":
+            filepath = folder / f"{name}_{year}-{month}.json"
+
+            payload = {
+                "date": f"{year}-{month}-{day}",
+                "type": name,
+                "value": data
+            }
+        else:
+            raise ValueError("Nome inválido para salvar dados brutos.")
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
