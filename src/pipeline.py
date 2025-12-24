@@ -42,8 +42,8 @@ class Pipeline:
         fpath_ipca = self._save_raw(dados_ipca, "ipca", day, month, year)
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
-        cdi_dict = self._transform_cdi(dados_cdi)
-        ipca_dict = self._transform_ipca(dados_ipca)
+        cdi_dict = self._transform_cdi(dados_cdi, year, month, day)
+        ipca_dict = self._transform_ipca(dados_ipca, year, month)
 
         print("> Salvando resultados...") # -------- LOAD --------
         self._load(cdi_dict)
