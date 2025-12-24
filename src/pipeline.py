@@ -35,10 +35,10 @@ class Pipeline:
 
         print("> Buscando dados...") # -------- FETCH --------
 
-        dados_cdi = self._fetch_cdi(day, month, year)
+        dados_cdi = self._fetch_cdi(dt)
         fpath_cdi = self._save_raw(dados_cdi, "cdi", day, month, year)
 
-        dados_ipca = self._fetch_ipca(month, year)
+        dados_ipca = self._fetch_ipca(dt)
         fpath_ipca = self._save_raw(dados_ipca, "ipca", day, month, year)
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
@@ -59,12 +59,12 @@ class Pipeline:
         return date_info()
 
 
-    def _fetch_cdi(self, day, month, year):
-        return get_cdi(day, month, year) # float
+    def _fetch_cdi(self, datetime):
+        return get_cdi(datetime) # float
 
 
-    def _fetch_ipca(self, month, year):
-        return get_ipca(month, year) # float
+    def _fetch_ipca(self, datetime):
+        return get_ipca(datetime) # float
 
 
     def _save_raw(self, data, name, day, month, year):

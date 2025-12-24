@@ -1,13 +1,15 @@
+from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
 
-def get_cdi(day, month, year):
+def get_cdi(date: datetime) -> float:
+    prev_date = date - timedelta(days=1)
     url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados"
     params = {
         "formato": "json",
-        "dataInicial": f"{day - 1}/{month}/{year}",
-        "dataFinal": f"{day}/{month}/{year}"
+        "dataInicial": prev_date.strftime("%d/%m/%Y"),
+        "dataFinal": date.strftime("%d/%m/%Y"),
     }
 
     response = requests.get(url, params=params)
