@@ -1,6 +1,9 @@
 from src.fetch.fetch_cdi import get_cdi
 from src.fetch.fetch_ipca import get_ipca
 from src.utils.date_utils import date_info, is_business_day
+from src.transform.cdi_transform import calc_annual_cdi, get_annual_cdi
+from src.transform.ipca_transform import calc_annual_ipca, get_annual_ipca
+from src.load.load_to_excel import register_cdi_data, register_ipca_data
 import json
 from pathlib import Path
 
@@ -9,10 +12,12 @@ class Pipeline:
     def __init__(self, persistence_mode="excel"):
         self.persistence_mode = persistence_mode
 
-        self.loaders = {
-            "excel": self._load_to_excel,
-            "sqlite": self._load_to_sqlite
-        }
+        # Desabilitado por enquanto para encaixar melhor com os loaders específicos para cada dado
+        # self.loaders = {
+        #     "excel": self._load_to_excel,
+        #     "sqlite": self._load_to_sqlite
+        # }
+
 
     def run(self):
         print("=== INICIANDO PIPELINE ===>")
@@ -24,10 +29,7 @@ class Pipeline:
         if is_business_day(dt) is False:
             print("Data informada não é um dia útil. Encerrando pipeline.")
 
-
-        day = dt.day
-        month = dt.month
-        year = dt.year
+        day, month, year = dt.day, dt.month, dt.year
 
         # todo: validar se data já foi processada
 
@@ -40,11 +42,12 @@ class Pipeline:
         fpath_ipca = self._save_raw(dados_ipca, "ipca", day, month, year)
 
         print("> Processando e calculando...") # -------- TRANSFORM --------
-        rentabilidade = self._transform(dados_cdi)
-        inflacao = self._transform(dados_ipca)
+        cdi_dict = self._transform_cdi(dados_cdi)
+        ipca_dict = self._transform_ipca(dados_ipca)
 
         print("> Salvando resultados...") # -------- LOAD --------
-        self._load(rentabilidade)
+        self._load(cdi_dict)
+        self._load(ipca_dict)
 
         print("=== PIPELINE FINALIZADA ===")
 
@@ -97,22 +100,33 @@ class Pipeline:
     #  TRANSFORM
     # ============================
 
-    def _transform(self, dados_cdi):
-        # TODO: implementar transform
-        return
+    def _transform_cdi(self, dados_cdi, year, month, day):
+        cdis_so_far = get_annual_cdi(year, f"{year}-{month}-{day}")
+        annual_cdi = calc_annual_cdi(cdis_so_far, dados_cdi)
+        return {"date": f"{year}-{month}-{day}", "cdi_daily": dados_cdi, "cdi_annual": annual_cdi}
+
+    def _transform_ipca(self, dados_ipca, year, month):
+        ipcas_so_far = get_annual_ipca(year, f"{year}-{month}")
+        annual_ipca = calc_annual_ipca(ipcas_so_far, dados_ipca)
+        return {"date": f"{year}-{month}", "ipca_monthly": dados_ipca, "ipca_annual": annual_ipca}
 
     # ============================
     #  LOAD
     # ============================
 
-    def _load(self, resultado):
-        self.loaders[self.persistence_mode](resultado)
-        return
+    # Desabilitado por enquanto para encaixar melhor com os loaders específicos para cada dado
+    # def _load(self, new_row):
+    #     self.loaders[self.persistence_mode](new_row)
+    #     return
 
-    def _load_to_excel(self, resultado):
-        # TODO: implementar persistência em excel
-        return
+    def _load_cdi_to_excel(self, new_row):
+        register_cdi_data(new_row)
 
-    def _load_to_sqlite(self, resultado):
+
+    def _load_ipca_to_excel(self, new_row):
+        register_ipca_data(new_row)
+
+
+    def _load_to_sqlite(self, new_row):
         # TODO: implementar persistência em sqlite
         return
