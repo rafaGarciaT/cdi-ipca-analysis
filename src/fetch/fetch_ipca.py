@@ -7,12 +7,14 @@ import requests
 class IpcaFetchError(Exception):
     pass
 
-def get_ipca(date: datetime) -> float:
+def get_monthly_ipca(date: datetime, end_date: datetime=None) -> float | list[dict[str, float]]:
+    data_inicial = date.strftime("%d/%m/%Y")
+    data_final = end_date.strftime("%d/%m/%Y") if end_date else date.strftime("%d/%m/%Y")
     url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados"
     params = {
         "formato": "json",
-        "dataInicial": f"{date.strftime('%d/%m/%Y')}",
-        "dataFinal": f"{date.strftime('%d/%m/%Y')}",
+        "dataInicial": data_inicial,
+        "dataFinal": data_final
     }
     response = requests.get(url, params=params)
     data = response.json()
@@ -22,20 +24,12 @@ def get_ipca(date: datetime) -> float:
         error = df["erro"]
         raise IpcaFetchError(f"Dados de IPCA não encontrados para a data {date.strftime('%Y-%m-%d')}: {error}")
 
-    return df["valor"].astype(float).iloc[0]
+    ipca_obj = df["valor"].astype(float)
+    if len(ipca_obj) == 1:
+        return ipca_obj.iloc[0] / 100  # A API retorna o CDI em percentual, converto para decimal por padrão
+    else:
+        ipca_list = []
+        for idx, row in df.iterrows():
+            ipca_list.append({row["data"]: float(row["valor"]) / 100})
+        return ipca_list
 
-def get_ipca_range(start_date: datetime, end_date: datetime) -> list[dict[str, float]]:
-    ipca_list = []
-    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados"
-    params = {
-        "formato": "json",
-        "dataInicial": start_date.strftime("%d/%m/%Y"),
-        "dataFinal": end_date.strftime("%d/%m/%Y")
-    }
-    response = requests.get(url, params=params)
-    data = response.json()
-    df = pd.DataFrame(data)
-
-    for ipca in df.itertuples():
-        ipca_list.append({ipca.data: float(ipca.valor)})
-    return ipca_list

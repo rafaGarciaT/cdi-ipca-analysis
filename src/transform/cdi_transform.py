@@ -9,7 +9,7 @@ def load_json(date: str) -> dict[str, float]:
         data = json.load(f)
     return data
 
-def get_annual_cdi(year: str, today: str) -> List[float]:
+def get_annual_cdi_rates(year: str, stop_date: str) -> List[float]:
     project_root = Path(__file__).parent.parent
     base = project_root / "data" / "raw" / "cdi"
     cdi_list = []
@@ -17,7 +17,7 @@ def get_annual_cdi(year: str, today: str) -> List[float]:
     files = sorted(base.glob(pattern=f"cdi_{year}-*.json"))
     names = [p.name for p in files]
     for n in names:
-        if today in n:
+        if stop_date in n:
             break
         filepath = base / n
         with open(filepath, "r", encoding="utf-8") as f:
@@ -26,15 +26,12 @@ def get_annual_cdi(year: str, today: str) -> List[float]:
 
     return cdi_list
 
-def calc_annual_cdi(cdis_so_far: List[float], cdi_today: float) -> float:
+def calc_accumulated_cdi(cdi_annual_rates: List[float]) -> float:
     factor = 1.0
+    for rate in cdi_annual_rates:
+        factor *= calc_cdi_daily_factor(rate)
+    return factor - 1
 
-    for cdi in cdis_so_far:
-        factor *= (1 + cdi / 100)
 
-    factor *= (1 + cdi_today / 100)
-
-    return round((factor - 1) * 100, 6)
-
-def calc_cdi_anual(cdi_diario: float) -> float:
-    return round(((1 + cdi_diario / 100) ** 252 - 1) * 100, 6)
+def calc_cdi_daily_factor(cdi_annual_rate: float) -> float:
+    return (1 + cdi_annual_rate) ** (1 / 252)

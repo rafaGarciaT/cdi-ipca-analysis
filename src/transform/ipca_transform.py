@@ -9,7 +9,7 @@ def load_json(date: str) -> dict[str, float]:
         data = json.load(f)
     return data
 
-def get_annual_ipca(year: str, today: str) -> List[float]:
+def get_monthly_ipca_rates(year: str, stop_date: str) -> List[float]:
     project_root = Path(__file__).parent.parent
     base = project_root / "data" / "raw" / "ipca"
     ipca_list = []
@@ -17,7 +17,7 @@ def get_annual_ipca(year: str, today: str) -> List[float]:
     files = sorted(base.glob(pattern=f"ipca_{year}-*.json"))
     names = [p.name for p in files]
     for n in names:
-        if today in n:
+        if stop_date in n:
             break
         filepath = base / n
         with open(filepath, "r", encoding="utf-8") as f:
@@ -27,17 +27,10 @@ def get_annual_ipca(year: str, today: str) -> List[float]:
     return ipca_list
 
 
-def calc_annual_ipca(ipcas_so_far: List[float], ipca_today: float) -> float:
+def calc_accumulated_ipca(ipcas_monthly_rates: List[float], ipca_this_month: float) -> float:
     factor = 1.0
-
-    for ipca in ipcas_so_far:
+    for ipca in ipcas_monthly_rates:
         factor *= (1 + ipca / 100)
 
-    factor *= (1 + ipca_today / 100)
-
+    factor *= (1 + ipca_this_month / 100)
     return round((factor - 1) * 100, 6)
-
-
-def calc_ipca_acumulado(valores: list[float]) -> float:
-    serie = pd.Series(valores)
-    return (1 + serie / 100).prod() - 1

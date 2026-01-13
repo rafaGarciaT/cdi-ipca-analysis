@@ -43,11 +43,14 @@ def get_last_cdi_row(before_date: datetime) -> pd.Series | None:
     if df.empty:
         return None
 
-    df["date"] = pd.to_datetime(df["date"])
-    df = df[df["date"] < before_date]
+    df_year = df[df["year"] == before_date.year]
+    if df_year.empty:
+        return None
+    df["month"] = pd.to_datetime(df["month"])
+    df = df[df["month"] < before_date]
     if df.empty:
         return None
-    df = df.sort_values("date")
+    df = df.sort_values("month")
 
     return df.iloc[-1]
 
