@@ -1,4 +1,7 @@
-def calc_tabela_reg(days_invested):
+
+
+def calc_tax_reg_table(days_invested: int) -> float:
+    """Calcula a alíquota do imposto de renda com base no tempo de investimento."""
     if days_invested <= 180:
         return 0.255
     elif days_invested <= 360:

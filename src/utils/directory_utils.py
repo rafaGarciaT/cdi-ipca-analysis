@@ -1,9 +1,9 @@
-import os
 import shutil
 from pathlib import Path
 
 
 def clear_folder_contents(folder_path: str) -> None:
+    """Deleta todos os arquivos e subpastas dentro da pasta especificada."""
     folder = Path(folder_path)
 
     if not folder.exists():
@@ -25,6 +25,7 @@ def clear_folder_contents(folder_path: str) -> None:
 
 
 def clear_data_folders() -> None:
+    """Limpa o conteúdo das pastas de dados brutos e processados."""
     folders_to_clear = [
         "data/processed",
         "data/raw/monthly_cdi",

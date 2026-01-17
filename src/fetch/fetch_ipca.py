@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from src.config import API_DATE_FORMAT, API_BASE_URL_IPCA_MONTHLY
 import pandas as pd
 import requests
 
@@ -7,10 +7,12 @@ import requests
 class IpcaFetchError(Exception):
     pass
 
+
 def get_monthly_ipca(date: datetime, end_date: datetime=None) -> float | list[dict[str, float]]:
-    data_inicial = date.strftime("%d/%m/%Y")
-    data_final = end_date.strftime("%d/%m/%Y") if end_date else date.strftime("%d/%m/%Y")
-    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados"
+    """Retorna uma, ou uma lista de taxas de IPCA mensais para o período especificado."""
+    data_inicial = date.strftime(API_DATE_FORMAT)
+    data_final = end_date.strftime(API_DATE_FORMAT) if end_date else date.strftime(API_DATE_FORMAT)
+    url = API_BASE_URL_IPCA_MONTHLY
     params = {
         "formato": "json",
         "dataInicial": data_inicial,
@@ -32,4 +34,3 @@ def get_monthly_ipca(date: datetime, end_date: datetime=None) -> float | list[di
         for idx, row in df.iterrows():
             ipca_list.append({row["data"]: float(row["valor"]) / 100})
         return ipca_list
-

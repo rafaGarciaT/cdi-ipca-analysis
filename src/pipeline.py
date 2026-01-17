@@ -1,18 +1,17 @@
-from datetime import timedelta, datetime
-from dateutil.relativedelta import relativedelta
-from src.fetch.fetch_cdi import get_cdi, get_cdi_range, CdiFetchError, get_monthly_cdi_rate, get_yearly_cdi_rate
-from src.fetch.fetch_ipca import get_monthly_ipca, IpcaFetchError
+from datetime import datetime
+from src.fetch.fetch_cdi import get_monthly_cdi_rate, get_yearly_cdi_rate
+from src.fetch.fetch_ipca import get_monthly_ipca
 from src.utils.date_utils import date_info, is_business_day
-from src.transform.cdi_transform import calc_accumulated_cdi, get_annual_cdi_rates, calc_cdi_daily_factor
-from src.transform.ipca_transform import get_monthly_ipca_rates, calc_accumulated_ipca
-from src.storage.excel_ipca import register_ipca_data, get_last_ipca_accumulated
-from src.storage.excel_cdi import register_cdi_data, get_last_cdi_accumulated
+from src.config import pr_root, API_DATE_FORMAT
+from src.storage.excel_ipca import register_ipca_data
+from src.storage.excel_cdi import register_cdi_data
 import json
-from pathlib import Path
+from typing import TypeAlias
 
+fetchReturns: TypeAlias = float | list[dict[str, float]]
 
 class Pipeline:
-    def __init__(self, persistence_mode="excel", execution_mode="daily", target_year=None):
+    def __init__(self, persistence_mode: str = "excel", execution_mode: str = "month", target_year: str = None):
         self.persistence_mode = persistence_mode
         self.execution_mode = execution_mode
         self.target_year = target_year if target_year else datetime.now().year
@@ -32,16 +31,16 @@ class Pipeline:
 
         dt = self._fetch_date()
 
-        if self.execution_mode == "daily": self._run_daily(dt)
-        elif self.execution_mode == "yearly": self._run_yearly(dt)
-        elif self.execution_mode == "backfill": self._run_backfill(dt)
+        if self.execution_mode == "month": self._run_month(dt)
+        elif self.execution_mode == "year": self._run_year(dt)
+        elif self.execution_mode == "backfill": self._run_backfill()
         else:
             print(f"Modo desconhecido: {self.execution_mode}")
 
         print("=== PIPELINE FINALIZADA ===")
 
 
-    def _run_daily(self, dt):
+    def _run_month(self, dt: datetime):
         if not is_business_day(dt):
             print("Data informada não é um dia útil. Encerrando pipeline.")
             return
@@ -55,23 +54,23 @@ class Pipeline:
             return
 
         print("> Buscando dados...")
-        dados_cdi, yearly_cdi = self._fetch_cdi(dt)
-        self._save_raw(dados_cdi, "monthly_cdi", dt)
+        monthly_cdi, yearly_cdi = self._fetch_cdi(dt)
+        self._save_raw(monthly_cdi, "monthly_cdi", dt)
         self._save_raw(yearly_cdi, "yearly_cdi", dt)
 
-        dados_ipca, yearly_cdi = self._fetch_ipca(dt)
-        self._save_raw(dados_ipca, "ipca", dt)
+        monthly_ipca = self._fetch_ipca(dt)
+        self._save_raw(monthly_ipca, "ipca", dt)
 
         print("> Processando e calculando...")
-        cdi_dict = self._transform_cdi(dados_cdi, dt)
-        ipca_dict = self._transform_ipca(dados_ipca, dt)
+        cdi_dict = self._transform_cdi(monthly_cdi, yearly_cdi, dt)
+        ipca_dict = self._transform_ipca(monthly_ipca, dt)
 
         print("> Salvando resultados...")
         self._load_cdi_to_excel(cdi_dict)
         self._load_ipca_to_excel(ipca_dict)
 
 
-    def _run_yearly(self, dt):
+    def _run_year(self, dt: datetime):
         print(f"> Recolhendo dados do ano {self.target_year}...\n")
         year = self.target_year
 
@@ -91,7 +90,7 @@ class Pipeline:
         print("> Processando e salvando dados (CDI)...")
         for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
             for date_str, value in cdi_entry.items():
-                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+                date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
                 yearly_value = next(iter(cdi_yearly_entry.values()))
 
                 if not self._cdi_has_been_processed(date_obj):
@@ -103,8 +102,7 @@ class Pipeline:
         print("> Processando e salvando dados (IPCA)...")
         for ipca_entry in ipca_data:
             for date_str, value in ipca_entry.items():
-                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
-                month, year_val = date_obj.month, date_obj.year
+                date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
 
                 if not self._ipca_has_been_processed(date_obj):
                     self._save_raw(value / 100, "ipca", date_obj)
@@ -112,8 +110,7 @@ class Pipeline:
                     self._load_ipca_to_excel(ipca_dict)
 
 
-    def _run_backfill(self, dt):
-        pr_root = Path(__file__).parent.parent
+    def _run_backfill(self):
         cdi_raw_dir = pr_root / "data" / "raw" / "cdi"
         ipca_raw_dir = pr_root / "data" / "raw" / "ipca"
 
@@ -152,7 +149,7 @@ class Pipeline:
         if cdi_data:
             for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
                 for date_str, value in cdi_entry.items():
-                    date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
                     yearly_value = next(iter(cdi_yearly_entry.values()))
 
                     if is_business_day(date_obj) and date_obj not in cdi_processed_dates:
@@ -168,7 +165,7 @@ class Pipeline:
         if ipca_data:
             for ipca_entry in ipca_data:
                 for date_str, value in ipca_entry.items():
-                    date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
                     month_start = datetime(date_obj.year, date_obj.month, 1)
 
                     if month_start not in ipca_processed_dates:
@@ -189,15 +186,15 @@ class Pipeline:
     # ============================
     #  PREPARE
     # ============================
-
-    def _cdi_has_been_processed(self, dt):
-        pr_root = Path(__file__).parent.parent
+    @staticmethod
+    def _cdi_has_been_processed(dt: datetime) -> bool:
+        """Define se o CDI já foi processado para a data fornecida."""
         filepath = pr_root / "data" / "raw" / "cdi" / f"cdi_{dt.strftime("%Y-%m")}.json"
         return filepath.exists()
 
-
-    def _ipca_has_been_processed(self, dt):
-        pr_root = Path(__file__).parent.parent
+    @staticmethod
+    def _ipca_has_been_processed(dt: datetime) -> bool:
+        """Define se o IPCA já foi processado para a data fornecida."""
         filepath = pr_root / "data" / "raw" / "ipca" / f"ipca_{dt.strftime("%Y-%m")}.json"
         return filepath.exists()
 
@@ -205,51 +202,36 @@ class Pipeline:
     #  FETCH
     # ============================
 
-    def _fetch_date(self):
+    @staticmethod
+    def _fetch_date() -> datetime:
+        """Obtém a data atual para execução da Pipeline."""
         return date_info()
 
-
-    def _fetch_cdi(self, datetime, end_datetime=None):
-        return get_monthly_cdi_rate(datetime, end_datetime), get_yearly_cdi_rate(datetime, end_datetime)
-
-
-    def _fetch_ipca(self, datetime, end_datetime=None):
-        return get_monthly_ipca(datetime, end_datetime)
+    @staticmethod
+    def _fetch_cdi(start_dt: datetime, end_dt: datetime = None) -> tuple[fetchReturns, fetchReturns]:
+        """Obtém a taxa CDI mensal e anual para a data fornecida."""
+        return get_monthly_cdi_rate(start_dt, end_dt), get_yearly_cdi_rate(start_dt, end_dt)
 
 
-    def _save_raw(self, data, name, dt):
-        pr_root = Path(__file__).parent.parent
+    @staticmethod
+    def _fetch_ipca(start_dt: datetime, end_dt: datetime = None) -> fetchReturns:
+        """Obtém a taxa IPCA mensal para a data fornecida."""
+        return get_monthly_ipca(start_dt, end_dt)
+
+
+    @staticmethod
+    def _save_raw(data: float, name: str, dt: datetime) -> str:
+        """Salva os dados brutos obtidos em um arquivo JSON."""
         folder = pr_root / "data" / "raw" / name
         folder.mkdir(parents=True, exist_ok=True)
 
-        if name == "monthly_cdi":
-            filepath = folder / f"{name}_{dt.strftime("%Y-%m")}.json"
+        filepath = folder / f"{name}_{dt.strftime("%Y-%m")}.json"
 
-            payload = {
-                "reference_date": f"{dt.strftime("%Y-%m")}",
-                "type": name,
-                "value": data  # A API retorna a taxa anual do CDI em float
-            }
-
-        elif name == "yearly_cdi":
-            filepath = folder / f"{name}_{dt.strftime("%Y-%m")}.json"
-
-            payload = {
-                "reference_date": f"{dt.strftime("%Y-%m")}",
-                "type": name,
-                "value": data  # A API retorna a taxa anual do CDI em float
-            }
-
-        elif name == "ipca":
-            filepath = folder / f"{name}_{dt.strftime("%Y-%m")}.json"
-
-            payload = {
-                "reference_date": f"{dt.strftime("%Y-%m")}",
-                "type": name,
-                "value": data
-            }
-        else:
-            raise ValueError("Nome inválido para salvar dados brutos.")
+        payload = {
+            "reference_date": f"{dt.strftime("%Y-%m")}",
+            "type": name,
+            "value": data
+        }
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
@@ -260,21 +242,16 @@ class Pipeline:
     #  TRANSFORM
     # ============================
 
-    def _transform_cdi(self, dados_cdi, dados_cdi_anual, dt):
-        # last_accumulated_cdi = get_last_cdi_accumulated(dt)
-        cdi_annual_rates = get_annual_cdi_rates(dt.year, f"{dt.strftime("%Y-%m-%d")}")
-        cdi_daily_factor = calc_cdi_daily_factor(dados_cdi)
-        # accumulated_cdi = (1 + last_accumulated_cdi) * cdi_daily_factor - 1
-        # return {"year": f"{dt.year}", "month": f"{dt.month}", "cdi_annual_rate": dados_cdi_anual, "cdi_daily_factor": cdi_daily_factor, "cdi_monthly_rate": dados_cdi, "cdi_accumulated": accumulated_cdi}
-        return {"year": f"{dt.year}", "month": f"{dt.month}", "cdi_annual_rate": dados_cdi_anual, "cdi_monthly_rate": dados_cdi}
+    @staticmethod
+    def _transform_cdi(cdi_monthly_rate: float, cdi_annual_rate: float, dt: datetime) -> dict[str, float | int]:
+        """Transforma os dados brutos de CDI em um dicionário estruturado para o load."""
+        return {"year": dt.year, "month": dt.month, "cdi_annual_rate": cdi_annual_rate, "cdi_monthly_rate": cdi_monthly_rate}
 
-    def _transform_ipca(self, dados_ipca, dt):
-        # last_accumulated_ipca = get_last_ipca_accumulated(dt)
-        ipca_monthly_rates = get_monthly_ipca_rates(dt.year, f"{dt.strftime("%Y-%m")}")
-        # accumulated_ipca = (1 + last_accumulated_ipca) * (1 + dados_ipca) - 1
-        # return {"date": f"{dt.strftime("%Y-%m")}", "ipca_monthly_rate": dados_ipca,"ipca_accumulated": accumulated_ipca}
 
-        return {"date": f"{dt.strftime("%Y-%m")}", "ipca_monthly_rate": dados_ipca}
+    @staticmethod
+    def _transform_ipca(ipca_monthly_rate: float, dt: datetime) -> dict[str, float | int]:
+        """Transforma os dados brutos de IPCA em um dicionário estruturado para o load."""
+        return {"year": dt.year, "month": dt.month, "ipca_monthly_rate": ipca_monthly_rate}
 
     # ============================
     #  LOAD
@@ -285,14 +262,13 @@ class Pipeline:
     #     self.loaders[self.persistence_mode](new_row)
     #     return
 
-    def _load_cdi_to_excel(self, new_row):
+    @staticmethod
+    def _load_cdi_to_excel(new_row: dict[str, float | int]):
+        """Carrega os dados de CDI para o Excel."""
         register_cdi_data(new_row)
 
 
-    def _load_ipca_to_excel(self, new_row):
+    @staticmethod
+    def _load_ipca_to_excel(new_row: dict[str, float | int]):
+        """Carrega os dados de IPCA para o Excel."""
         register_ipca_data(new_row)
-
-
-    def _load_to_sqlite(self, new_row):
-        # TODO: implementar persistência em sqlite
-        return

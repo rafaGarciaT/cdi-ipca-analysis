@@ -5,15 +5,15 @@ from src.utils.directory_utils import clear_data_folders
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Pipeline de processamento de dados CDI e IPCA'
+        description='Pipeline de coleta e processamento de dados CDI e IPCA'
     )
 
     parser.add_argument(
         '--mode',
         type=str,
-        choices=['daily', 'yearly', 'backfill'],
-        default='daily',
-        help='Modo de execução da pipeline (padrão: daily)'
+        choices=['month', 'yearly', 'backfill'],
+        default='month',
+        help='Modo de execução da pipeline (padrão: month)'
     )
 
     parser.add_argument(
@@ -37,9 +37,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    if args.mode == 'yearly' and not args.year:
-        parser.error("O argumento --year é obrigatório quando --mode é 'yearly'")
 
     if args.clear_data:
         clear_data_folders()
