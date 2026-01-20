@@ -8,7 +8,7 @@ e está conforme [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 
-## [0.1.0] - 2026-01-18
+## [0.1.0] - 2026-01-20
 
 ### Adicionado
 - Implementação inicial da Pipeline.
@@ -24,6 +24,7 @@ e está conforme [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Exceções fracas no fetch de dados. 
 - Falta de testes.
 - Arquitetura não escalável.
+- Pipeline com complexidade cognitiva alta.
 
 ### Próximos passos
 - Adicionar testes unitários e de integração.
