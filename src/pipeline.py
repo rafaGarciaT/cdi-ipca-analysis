@@ -32,7 +32,7 @@ class Pipeline:
         dt = self._fetch_date()
 
         if self.execution_mode == "month": self._run_month(dt)
-        elif self.execution_mode == "year": self._run_year(dt)
+        elif self.execution_mode == "yearly": self._run_year(dt)
         elif self.execution_mode == "backfill": self._run_backfill()
         else:
             print(f"Modo desconhecido: {self.execution_mode}")
@@ -45,29 +45,50 @@ class Pipeline:
             print("Data informada não é um dia útil. Encerrando pipeline.")
             return
 
-        if self._cdi_has_been_processed(dt):
-            print("Data já foi processada. Encerrando pipeline.")
-            return
-
         if self._ipca_has_been_processed(dt):
             print("Data já foi processada. Encerrando pipeline.")
             return
 
-        print("> Buscando dados...")
-        monthly_cdi, yearly_cdi = self._fetch_cdi(dt)
-        self._save_raw(monthly_cdi, "monthly_cdi", dt)
-        self._save_raw(yearly_cdi, "yearly_cdi", dt)
+        print("> CDI\nBuscando dados...")
+        if self._cdi_has_been_processed(dt):
+            print("CDI já foi processado nessa data já foi processada. Encerrando passo CDI.")
+        else:
+            monthly_cdi = yearly_cdi = None
 
-        monthly_ipca = self._fetch_ipca(dt)
-        self._save_raw(monthly_ipca, "ipca", dt)
+            try:
+                monthly_cdi, yearly_cdi = self._fetch_cdi(dt)
+            except Exception as e:
+                print(f"Erro ao buscar dados de CDI, encerrando passo CDI. Exception: {e}")
 
-        print("> Processando e calculando...")
-        cdi_dict = self._transform_cdi(monthly_cdi, yearly_cdi, dt)
-        ipca_dict = self._transform_ipca(monthly_ipca, dt)
+            if monthly_cdi is not None or yearly_cdi is not None:
+                try:
+                    print("Processando e salvando dados...")
+                    self._save_raw(monthly_cdi, "monthly_cdi", dt)
+                    self._save_raw(yearly_cdi, "yearly_cdi", dt)
+                    cdi_dict = self._transform_cdi(monthly_cdi, yearly_cdi, dt)
 
-        print("> Salvando resultados...")
-        self._load_cdi_to_excel(cdi_dict)
-        self._load_ipca_to_excel(ipca_dict)
+                    self._load_cdi_to_excel(cdi_dict)
+                except Exception as e:
+                    print(f"Erro ao processar dados de CDI, encerrando passo CDI. Exception: {e}")
+
+        print("> IPCA\nBuscando dados...")
+        if self._ipca_has_been_processed(dt):
+            print("IPCA já foi processado nessa data já foi processada. Encerrando passo IPCA.")
+        else:
+             monthly_ipca = None
+             try:
+                monthly_ipca = self._fetch_ipca(dt)
+             except Exception as e:
+                print(f"Erro ao buscar dados de IPCA, encerrando passo IPCA. Exception: {e}")
+
+             if monthly_ipca is not None:
+                try:
+                    self._save_raw(monthly_ipca, "ipca", dt)
+                    ipca_dict = self._transform_ipca(monthly_ipca, dt)
+
+                    self._load_ipca_to_excel(ipca_dict)
+                except Exception as e:
+                    print(f"Erro ao processar dados de IPCA, encerrando passo IPCA. Exception: {e}")
 
 
     def _run_year(self, dt: datetime):
@@ -78,36 +99,47 @@ class Pipeline:
         end_date = min(datetime(year, 12, 31), dt)
 
         print("> Buscando dados...")
+        cdi_data = yearly_cdi = ipca_data = []
+
         try:
             cdi_data, yearly_cdi = self._fetch_cdi(start_date, end_date)
         except Exception as e:
-            print(f"Erro ao buscar dados de CDI: {e}")
+            print(f"Erro ao buscar dados de CDI, encerrando passo CDI. Exception: {e}")
+            cdi_data = yearly_cdi = []
+
         try:
             ipca_data = self._fetch_ipca(start_date, end_date)
         except Exception as e:
-            print(f"Erro ao buscar dados de IPCA: {e}")
+            print(f"Erro ao buscar dados de IPCA, encerrando passo IPCA. Exception: {e}")
+            ipca_data = []
 
         print("> Processando e salvando dados (CDI)...")
-        for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
-            for date_str, value in cdi_entry.items():
-                date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
-                yearly_value = next(iter(cdi_yearly_entry.values()))
+        try:
+            for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
+                for date_str, value in cdi_entry.items():
+                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+                    yearly_value = next(iter(cdi_yearly_entry.values()))
 
-                if not self._cdi_has_been_processed(date_obj):
-                    self._save_raw(value, "monthly_cdi", date_obj)
-                    self._save_raw(yearly_value, "yearly_cdi", date_obj)
-                    cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
-                    self._load_cdi_to_excel(cdi_dict)
+                    if not self._cdi_has_been_processed(date_obj):
+                        self._save_raw(value, "monthly_cdi", date_obj)
+                        self._save_raw(yearly_value, "yearly_cdi", date_obj)
+                        cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
+                        self._load_cdi_to_excel(cdi_dict)
+        except Exception as e:
+            print(f"Erro ao processar dados de CDI, encerrando passo CDI. Exception: {e}")
 
         print("> Processando e salvando dados (IPCA)...")
-        for ipca_entry in ipca_data:
-            for date_str, value in ipca_entry.items():
-                date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+        try:
+            for ipca_entry in ipca_data:
+                for date_str, value in ipca_entry.items():
+                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
 
-                if not self._ipca_has_been_processed(date_obj):
-                    self._save_raw(value / 100, "ipca", date_obj)
-                    ipca_dict = self._transform_ipca(value / 100, date_obj)
-                    self._load_ipca_to_excel(ipca_dict)
+                    if not self._ipca_has_been_processed(date_obj):
+                        self._save_raw(value / 100, "ipca", date_obj)
+                        ipca_dict = self._transform_ipca(value / 100, date_obj)
+                        self._load_ipca_to_excel(ipca_dict)
+        except Exception as e:
+            print(f"Erro ao processar dados de IPCA, encerrando passo IPCA. Exception: {e}")
 
 
     def _run_backfill(self):
@@ -120,7 +152,7 @@ class Pipeline:
 
         cdi_processed_dates = set()
         for file in cdi_raw_dir.glob("*.json"):
-            cdi_parts = file.stem.split("_")[1].split("-")  # Extrai a data do nome do arquivo: cdi_YYYY-MM-DD.json
+            cdi_parts = file.stem.split("_")[1].split("-")
             if len(cdi_parts) == 2:
                 cdi_processed_dates.add(datetime(int(cdi_parts[0]), int(cdi_parts[1]), 1))
 
@@ -142,11 +174,24 @@ class Pipeline:
         print(f"CDI - Preenchendo lacunas entre {cdi_min_date.date()} e {cdi_max_date.date()}...")
         print(f"IPCA - Preenchendo lacunas entre {ipca_min_date.date()} e {ipca_max_date.date()}...")
         print(">Buscando dados...")
-        cdi_data, yearly_cdi = self._fetch_cdi(cdi_min_date, cdi_max_date)
-        ipca_data = self._fetch_ipca(ipca_min_date, ipca_max_date)
+
+        cdi_data = yearly_cdi = []
+        ipca_data = []
+
+        try:
+            cdi_data, yearly_cdi = self._fetch_cdi(cdi_min_date, cdi_max_date)
+        except Exception as e:
+            print(f"Erro ao buscar dados de CDI: {e}")
+            cdi_data, yearly_cdi = [], []
+
+        try:
+            ipca_data = self._fetch_ipca(ipca_min_date, ipca_max_date)
+        except Exception as e:
+            print(f"Erro ao buscar dados de IPCA: {e}")
+            ipca_data = []
 
         print("> Processando e salvando dados (CDI)...")
-        if cdi_data:
+        try:
             for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
                 for date_str, value in cdi_entry.items():
                     date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
@@ -158,25 +203,27 @@ class Pipeline:
                         cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
                         self._load_cdi_to_excel(cdi_dict)
                         filled_count += 1
-        else:
-            print("Nenhum dado de CDI disponível para backfill.")
+        except Exception as e:
+            print(f"Erro ao processar/salvar CDI: {e}")
 
         print("> Processando e salvando dados (IPCA)...")
-        if ipca_data:
+        try:
             for ipca_entry in ipca_data:
                 for date_str, value in ipca_entry.items():
                     date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
                     month_start = datetime(date_obj.year, date_obj.month, 1)
 
                     if month_start not in ipca_processed_dates:
-                        self._save_raw(value / 100, "ipca", date_obj)
-                        ipca_dict = self._transform_ipca(value / 100, date_obj)
+                        val_dec = value / 100 if isinstance(value, (int, float)) else value
+                        self._save_raw(val_dec, "ipca", date_obj)
+                        ipca_dict = self._transform_ipca(val_dec, date_obj)
                         self._load_ipca_to_excel(ipca_dict)
                         filled_count += 1
-        else:
-            print("Nenhum dado de IPCA disponível para backfill.")
+        except Exception as e:
+            print(f"Erro ao processar/salvar IPCA: {e}")
 
         print(f"Total de datas preenchidas: {filled_count}")
+
 
 
 
