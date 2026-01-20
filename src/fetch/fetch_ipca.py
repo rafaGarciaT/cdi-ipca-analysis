@@ -28,9 +28,9 @@ def get_monthly_ipca(date: datetime, end_date: datetime=None) -> float | list[di
 
     ipca_obj = df["valor"].astype(float)
     if len(ipca_obj) == 1:
-        return ipca_obj.iloc[0] / 100  # A API retorna o CDI em percentual, converto para decimal por padrão
+        return ipca_obj.iloc[0]
     else:
         ipca_list = []
         for idx, row in df.iterrows():
-            ipca_list.append({row["data"]: float(row["valor"]) / 100})
+            ipca_list.append({row["data"]: float(row["valor"])})
         return ipca_list
