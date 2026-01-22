@@ -57,3 +57,18 @@ def get_last_cdi_accumulated(before_date: datetime) -> float:
     """Retorna o valor acumulado do CDI até a data especificada."""
     last = get_last_cdi_row(before_date)
     return float(last["cdi_accumulated"]) if last is not None else 0.0
+
+
+def get_cdi_data(year: int | None = None, month: int | None = None) -> pd.DataFrame:
+    """Devolve os dados de CDI filtrados por ano e mês, se fornecidos."""
+    if not fpath.exists():
+        return cdi_schema()
+
+    df = load_cdi_sheet()
+
+    if year is not None:
+        df = df[df["year"] == year]
+    if month is not None:
+        df = df[df["month"] == month]
+
+    return df
