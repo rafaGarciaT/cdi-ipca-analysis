@@ -10,4 +10,4 @@ API_BASE_URL_CDI_MONTHLY = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/d
 API_BASE_URL_IPCA_MONTHLY = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados"
 
 # Formato de data utilizado nas requisições à API do Banco Central do Brasil
-API_DATE_FORMAT = "%d/%m/%Y"
+BCB_API_DATE_FORMAT = "%d/%m/%Y"

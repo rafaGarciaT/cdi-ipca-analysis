@@ -1,8 +1,7 @@
 from datetime import datetime
-from src.fetch.fetch_cdi import get_monthly_cdi_rate, get_yearly_cdi_rate
-from src.fetch.fetch_ipca import get_monthly_ipca
+from src.fetch import get_monthly_cdi_rate, get_yearly_cdi_rate, get_monthly_ipca
 from src.utils.date_utils import date_info, is_business_day
-from src.config import pr_root, API_DATE_FORMAT
+from src.config import pr_root, BCB_API_DATE_FORMAT
 from src.storage.excel_ipca import register_ipca_data
 from src.storage.excel_cdi import register_cdi_data
 import json
@@ -117,7 +116,7 @@ class Pipeline:
         try:
             for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
                 for date_str, value in cdi_entry.items():
-                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+                    date_obj = datetime.strptime(date_str, BCB_API_DATE_FORMAT)
                     yearly_value = next(iter(cdi_yearly_entry.values()))
 
                     if not self._cdi_has_been_processed(date_obj):
@@ -132,7 +131,7 @@ class Pipeline:
         try:
             for ipca_entry in ipca_data:
                 for date_str, value in ipca_entry.items():
-                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+                    date_obj = datetime.strptime(date_str, BCB_API_DATE_FORMAT)
 
                     if not self._ipca_has_been_processed(date_obj):
                         self._save_raw(value / 100, "ipca", date_obj)
@@ -194,7 +193,7 @@ class Pipeline:
         try:
             for cdi_entry, cdi_yearly_entry in zip(cdi_data, yearly_cdi):
                 for date_str, value in cdi_entry.items():
-                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+                    date_obj = datetime.strptime(date_str, BCB_API_DATE_FORMAT)
                     yearly_value = next(iter(cdi_yearly_entry.values()))
 
                     if is_business_day(date_obj) and date_obj not in cdi_processed_dates:
@@ -210,7 +209,7 @@ class Pipeline:
         try:
             for ipca_entry in ipca_data:
                 for date_str, value in ipca_entry.items():
-                    date_obj = datetime.strptime(date_str, API_DATE_FORMAT)
+                    date_obj = datetime.strptime(date_str, BCB_API_DATE_FORMAT)
                     month_start = datetime(date_obj.year, date_obj.month, 1)
 
                     if month_start not in ipca_processed_dates:
