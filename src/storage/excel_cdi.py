@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 import pandas as pd
 from src.storage.schema import cdi_schema
@@ -59,12 +60,17 @@ def get_last_cdi_accumulated(before_date: datetime) -> float:
     return float(last["cdi_accumulated"]) if last is not None else 0.0
 
 
-def get_cdi_data(year: int | None = None, month: int | None = None) -> pd.DataFrame:
+def get_cdi_data(year: int | None = None, month: int | None = None, data_dir: Path | None = None) -> pd.DataFrame:
     """Devolve os dados de CDI filtrados por ano e mês, se fornecidos."""
-    if not fpath.exists():
-        return cdi_schema()
-
-    df = load_cdi_sheet()
+    if data_dir is None:
+        if not fpath.exists():
+            return cdi_schema()
+        df = load_cdi_sheet()
+    else:
+        local_fpath = Path(data_dir) / "cdi_data.xlsx"
+        if not local_fpath.exists():
+            return cdi_schema()
+        df = pd.read_excel(local_fpath)
 
     if year is not None:
         df = df[df["year"] == year]
