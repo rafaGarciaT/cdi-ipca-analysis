@@ -3,8 +3,7 @@ import pandas as pd
 
 def cdi_schema() -> pd.DataFrame:
     df = pd.DataFrame({
-        "year": [],
-        "month": [],
+        "date": [],
         "cdi_annual_rate": [],
         "cdi_monthly_rate": [],
     })
@@ -13,8 +12,7 @@ def cdi_schema() -> pd.DataFrame:
 
 def ipca_schema() -> pd.DataFrame:
     df = pd.DataFrame({
-        "year": [],
-        "month": [],
+        "date": [],
         "ipca_monthly_rate": [],
     })
     return df

@@ -62,6 +62,9 @@ class Pipeline:
             if monthly_cdi is not None or yearly_cdi is not None:
                 try:
                     print("Processando e salvando dados...")
+                    # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                    monthly_cdi = monthly_cdi / 100
+                    yearly_cdi = yearly_cdi / 100
                     self._save_raw(monthly_cdi, "monthly_cdi", dt)
                     self._save_raw(yearly_cdi, "yearly_cdi", dt)
                     cdi_dict = self._transform_cdi(monthly_cdi, yearly_cdi, dt)
@@ -82,6 +85,8 @@ class Pipeline:
 
              if monthly_ipca is not None:
                 try:
+                    # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                    monthly_ipca = monthly_ipca / 100
                     self._save_raw(monthly_ipca, "ipca", dt)
                     ipca_dict = self._transform_ipca(monthly_ipca, dt)
 
@@ -120,6 +125,9 @@ class Pipeline:
                     yearly_value = next(iter(cdi_yearly_entry.values()))
 
                     if not self._cdi_has_been_processed(date_obj):
+                        # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                        value = value / 100
+                        yearly_value = yearly_value / 100
                         self._save_raw(value, "monthly_cdi", date_obj)
                         self._save_raw(yearly_value, "yearly_cdi", date_obj)
                         cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
@@ -134,8 +142,10 @@ class Pipeline:
                     date_obj = datetime.strptime(date_str, BCB_API_DATE_FORMAT)
 
                     if not self._ipca_has_been_processed(date_obj):
-                        self._save_raw(value / 100, "ipca", date_obj)
-                        ipca_dict = self._transform_ipca(value / 100, date_obj)
+                        # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                        value = value / 100
+                        self._save_raw(value, "ipca", date_obj)
+                        ipca_dict = self._transform_ipca(value, date_obj)
                         self._load_ipca_to_excel(ipca_dict)
         except Exception as e:
             print(f"Erro ao processar dados de IPCA, encerrando passo IPCA. Exception: {e}")
@@ -197,6 +207,9 @@ class Pipeline:
                     yearly_value = next(iter(cdi_yearly_entry.values()))
 
                     if is_business_day(date_obj) and date_obj not in cdi_processed_dates:
+                        # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                        value = value / 100
+                        yearly_value = yearly_value / 100
                         self._save_raw(value, "monthly_cdi", date_obj)
                         self._save_raw(yearly_value, "yearly_cdi", date_obj)
                         cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
@@ -213,9 +226,10 @@ class Pipeline:
                     month_start = datetime(date_obj.year, date_obj.month, 1)
 
                     if month_start not in ipca_processed_dates:
-                        val_dec = value / 100 if isinstance(value, (int, float)) else value
-                        self._save_raw(val_dec, "ipca", date_obj)
-                        ipca_dict = self._transform_ipca(val_dec, date_obj)
+                        # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
+                        value = value / 100
+                        self._save_raw(value, "ipca", date_obj)
+                        ipca_dict = self._transform_ipca(value, date_obj)
                         self._load_ipca_to_excel(ipca_dict)
                         filled_count += 1
         except Exception as e:
@@ -291,13 +305,13 @@ class Pipeline:
     @staticmethod
     def _transform_cdi(cdi_monthly_rate: float, cdi_annual_rate: float, dt: datetime) -> dict[str, float | int]:
         """Transforma os dados brutos de CDI em um dicionário estruturado para o load."""
-        return {"year": dt.year, "month": dt.month, "cdi_annual_rate": cdi_annual_rate, "cdi_monthly_rate": cdi_monthly_rate}
+        return {"date": dt.strftime("%Y-%m"), "cdi_annual_rate": cdi_annual_rate, "cdi_monthly_rate": cdi_monthly_rate}
 
 
     @staticmethod
     def _transform_ipca(ipca_monthly_rate: float, dt: datetime) -> dict[str, float | int]:
         """Transforma os dados brutos de IPCA em um dicionário estruturado para o load."""
-        return {"year": dt.year, "month": dt.month, "ipca_monthly_rate": ipca_monthly_rate}
+        return {"date": dt.strftime("%Y-%m"), "ipca_monthly_rate": ipca_monthly_rate}
 
     # ============================
     #  LOAD
