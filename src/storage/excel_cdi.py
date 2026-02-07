@@ -72,9 +72,14 @@ def get_cdi_data(year: int | None = None, month: int | None = None, data_dir: Pa
             return cdi_schema()
         df = pd.read_excel(local_fpath)
 
+    date_dt = pd.to_datetime(df["date"], format="%Y-%m", errors="coerce")
+    df = df.assign(_date_dt=date_dt)
+
     if year is not None:
-        df = df[df["year"] == year]
+        df = df[df["_date_dt"].dt.year == year]
     if month is not None:
-        df = df[df["month"] == month]
+        df = df[df["_date_dt"].dt.month == month]
+
+    df = df.drop(columns=["_date_dt"])
 
     return df
