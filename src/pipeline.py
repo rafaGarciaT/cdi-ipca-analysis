@@ -1,9 +1,9 @@
 from datetime import datetime
 from src.fetch import get_monthly_cdi_rate, get_yearly_cdi_rate, get_monthly_ipca
+from src.storage import StorageFactory, cdi_schema, ipca_schema
 from src.utils.date_utils import date_info, is_business_day
 from src.config import pr_root, BCB_API_DATE_FORMAT
-from src.storage.excel_ipca import register_ipca_data
-from src.storage.excel_cdi import register_cdi_data
+
 import json
 from typing import TypeAlias
 
@@ -20,9 +20,26 @@ class Pipeline:
         #     "excel": self._load_to_excel,
         #     "sqlite": self._load_to_sqlite
         # }
+
+        cdi_ext = "xlsx" if persistence_mode == "excel" else "csv"
+        ipca_ext = "xlsx" if persistence_mode == "excel" else "csv"
+
+        self.cdi_storage = StorageFactory.create_storage(
+            persistence_mode,
+            pr_root / "data" / "processed" / f"cdi_data.{cdi_ext}",
+            cdi_schema
+        )
+
+        self.ipca_storage = StorageFactory.create_storage(
+            persistence_mode,
+            pr_root / "data" / "processed" / f"ipca_data.{ipca_ext}",
+            ipca_schema
+        )
     # ============================
     #  RUN
     # ============================
+
+
 
     def run(self):
         print("=== INICIANDO PIPELINE ===")
@@ -322,13 +339,12 @@ class Pipeline:
     #     self.loaders[self.persistence_mode](new_row)
     #     return
 
-    @staticmethod
-    def _load_cdi_to_excel(new_row: dict[str, float | int]):
+
+    def _load_cdi_to_excel(self, new_row: dict[str, float | int]):
         """Carrega os dados de CDI para o Excel."""
-        register_cdi_data(new_row)
+        self.cdi_storage.register_data(new_row)
 
 
-    @staticmethod
-    def _load_ipca_to_excel(new_row: dict[str, float | int]):
+    def _load_ipca_to_excel(self, new_row: dict[str, float | int]):
         """Carrega os dados de IPCA para o Excel."""
-        register_ipca_data(new_row)
+        self.ipca_storage.register_data(new_row)
