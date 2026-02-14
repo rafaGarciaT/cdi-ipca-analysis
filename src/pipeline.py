@@ -10,7 +10,7 @@ from typing import TypeAlias
 fetchReturns: TypeAlias = float | list[dict[str, float]]
 
 class Pipeline:
-    def __init__(self, persistence_mode: str = "excel", execution_mode: str = "month", target_year: str = None):
+    def __init__(self, persistence_mode: str = "excel", execution_mode: str = "month", target_year: int = None):
         self.persistence_mode = persistence_mode
         self.execution_mode = execution_mode
         self.target_year = target_year if target_year else datetime.now().year

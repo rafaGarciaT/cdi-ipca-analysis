@@ -3,6 +3,10 @@ from pathlib import Path
 # Diretório raiz do projeto
 pr_root = Path(__file__).parent.parent
 
+# Limites do projeto
+FIRST_YEAR_LIMIT = 1986
+
+# 31/07/1986
 # Links das APIs utilizadas
 API_BASE_URL_CDI_INTERESTS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados"
 API_BASE_URL_CDI_YEARLY = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4392/dados"
