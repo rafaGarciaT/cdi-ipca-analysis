@@ -3,6 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 import pandas as pd
+from openpyxl import load_workbook
+
 from src.storage.base import BaseStorage
 
 
@@ -13,8 +15,8 @@ class ExcelStorage(BaseStorage):
         self.schema_func = schema_func
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    def create_sheet(self, schema_func=None) -> pd.DataFrame:
-        schema = schema_func() if schema_func else self.schema_func()
+    def create_sheet(self) -> pd.DataFrame:
+        schema = self.schema_func()
         schema.to_excel(self.filepath, index=False)
         return schema
 
@@ -23,13 +25,14 @@ class ExcelStorage(BaseStorage):
 
     def register_data(self, new_row: dict[str, Any]) -> None:
         if not self.filepath.exists():
-            df = self.create_sheet()
-        else:
-            df = self.load_sheet()
+            self.create_sheet()
 
-        new_df = pd.DataFrame([new_row])
-        df = pd.concat([df, new_df], ignore_index=True)
-        df.to_excel(self.filepath, index=False)
+        wb = load_workbook(self.filepath)
+        ws = wb.active
+
+        ws.append(list(new_row.values()))
+
+        wb.save(self.filepath)
 
     def get_last_row(self, before_date: datetime) -> pd.Series | None:
         if not self.filepath.exists():
@@ -53,11 +56,15 @@ class ExcelStorage(BaseStorage):
             return self.schema_func()
 
         df = pd.read_excel(target_filepath)
-        date_dt = pd.to_datetime(df["date"], format="%Y-%m", errors="coerce")
+        df["date"] = pd.to_datetime(df["date"])
 
         if year is not None:
-            date_dt = date_dt[date_dt.dt.year == year]
+            df = df[df["date"].dt.year == year]
         if month is not None:
-            date_dt = date_dt[date_dt.dt.month == month]
+            df = df[df["date"].dt.month == month]
 
-        return df[df["date"].isin(date_dt.dt.strftime("%Y-%m"))]
+        return df
+
+    def order_by_date(self, df: pd.DataFrame) -> pd.DataFrame:
+        df["date"] = pd.to_datetime(df["date"])
+        return df.sort_values("date")

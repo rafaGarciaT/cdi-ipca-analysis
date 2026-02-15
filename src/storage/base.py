@@ -9,7 +9,7 @@ import pandas as pd
 class BaseStorage(ABC):
 
     @abstractmethod
-    def create_sheet(self, schema_func) -> pd.DataFrame:
+    def create_sheet(self) -> pd.DataFrame:
         pass
 
     @abstractmethod
@@ -26,4 +26,8 @@ class BaseStorage(ABC):
 
     @abstractmethod
     def get_data(self, year: int | None = None, month: int | None = None, filepath: Path | None = None) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def order_by_date(self, df: pd.DataFrame) -> pd.DataFrame:
         pass
