@@ -89,7 +89,7 @@ def main():
         for year in range(start_year, end_year + 1):
             print(f"\n=== Processando ano {year} ===")
             pipeline = Pipeline(
-                persistence_mode=args.persistence,
+                processed_persistence_mode=args.persistence,
                 execution_mode=args.mode,
                 target_year=year
             )
@@ -97,7 +97,7 @@ def main():
     else:
         # Comportamento normal para outros modos
         pipeline = Pipeline(
-            persistence_mode=args.persistence,
+            processed_persistence_mode=args.persistence,
             execution_mode=args.mode,
             target_year=args.year
         )

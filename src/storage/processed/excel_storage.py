@@ -1,14 +1,13 @@
-# src/storage/excel_storage.py
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 import pandas as pd
 from openpyxl import load_workbook
 
-from src.storage.base import BaseStorage
+from src.storage.processed import BaseProcessedStorage
 
 
-class ExcelStorage(BaseStorage):
+class ExcelProcessedStorage(BaseProcessedStorage):
 
     def __init__(self, filepath: Path, schema_func: Callable[[], pd.DataFrame]):
         self.filepath = filepath

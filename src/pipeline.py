@@ -1,40 +1,51 @@
 from datetime import datetime
 from src.fetch import get_monthly_cdi_rate, get_yearly_cdi_rate, get_monthly_ipca
-from src.storage import StorageFactory, cdi_schema, ipca_schema
+from src.storage import RawStorageFactory, ProcessedStorageFactory, cdi_schema, ipca_schema, JsonRawStorage, \
+    BaseRawStorage
 from src.utils.date_utils import date_info, is_business_day
 from src.config import pr_root, BCB_API_DATE_FORMAT
 
-import json
 from typing import TypeAlias
 
 fetchReturns: TypeAlias = float | list[dict[str, float]]
 
 class Pipeline:
-    def __init__(self, persistence_mode: str = "excel", execution_mode: str = "month", target_year: int = None):
-        self.persistence_mode = persistence_mode
+    def __init__(self, raw_persistence_mode: str = "json", processed_persistence_mode: str = "excel", execution_mode: str = "month", target_year: int = None):
+        self.raw_persistence_mode = raw_persistence_mode
+        self.processed_persistence_mode = processed_persistence_mode
         self.execution_mode = execution_mode
         self.target_year = target_year if target_year else datetime.now().year
 
-        # Desabilitado por enquanto para encaixar melhor com os loaders específicos para cada dado
-        # self.loaders = {
-        #     "excel": self._load_to_excel,
-        #     "sqlite": self._load_to_sqlite
-        # }
+        cdi_ext = "xlsx" if processed_persistence_mode == "excel" else "csv"
+        ipca_ext = "xlsx" if processed_persistence_mode == "excel" else "csv"
 
-        cdi_ext = "xlsx" if persistence_mode == "excel" else "csv"
-        ipca_ext = "xlsx" if persistence_mode == "excel" else "csv"
+        self.raw_monthly_cdi_storage = RawStorageFactory.create_storage(
+            raw_persistence_mode,
+            "monthly_cdi"
+        )
 
-        self.cdi_storage = StorageFactory.create_storage(
-            persistence_mode,
+        self.raw_yearly_cdi_storage = RawStorageFactory.create_storage(
+            raw_persistence_mode,
+            "yearly_cdi"
+        )
+
+        self.raw_ipca_storage = RawStorageFactory.create_storage(
+            raw_persistence_mode,
+            "ipca"
+        )
+
+        self.processed_cdi_storage = ProcessedStorageFactory.create_storage(
+            processed_persistence_mode,
             pr_root / "data" / "processed" / f"cdi_data.{cdi_ext}",
             cdi_schema
         )
 
-        self.ipca_storage = StorageFactory.create_storage(
-            persistence_mode,
+        self.processed_ipca_storage = ProcessedStorageFactory.create_storage(
+            processed_persistence_mode,
             pr_root / "data" / "processed" / f"ipca_data.{ipca_ext}",
             ipca_schema
         )
+
     # ============================
     #  RUN
     # ============================
@@ -82,8 +93,8 @@ class Pipeline:
                     # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                     monthly_cdi = monthly_cdi / 100
                     yearly_cdi = yearly_cdi / 100
-                    self._save_raw(monthly_cdi, "monthly_cdi", dt)
-                    self._save_raw(yearly_cdi, "yearly_cdi", dt)
+                    self._save_raw(monthly_cdi, dt, self.raw_monthly_cdi_storage)
+                    self._save_raw(yearly_cdi, dt, self.raw_yearly_cdi_storage)
                     cdi_dict = self._transform_cdi(monthly_cdi, yearly_cdi, dt)
 
                     self._load_cdi_to_excel(cdi_dict)
@@ -104,7 +115,7 @@ class Pipeline:
                 try:
                     # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                     monthly_ipca = monthly_ipca / 100
-                    self._save_raw(monthly_ipca, "ipca", dt)
+                    self._save_raw(monthly_ipca, dt, self.raw_ipca_storage)
                     ipca_dict = self._transform_ipca(monthly_ipca, dt)
 
                     self._load_ipca_to_excel(ipca_dict)
@@ -145,8 +156,8 @@ class Pipeline:
                         # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                         value = value / 100
                         yearly_value = yearly_value / 100
-                        self._save_raw(value, "monthly_cdi", date_obj)
-                        self._save_raw(yearly_value, "yearly_cdi", date_obj)
+                        self._save_raw(value, date_obj, self.raw_monthly_cdi_storage)
+                        self._save_raw(yearly_value, date_obj, self.raw_yearly_cdi_storage)
                         cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
                         self._load_cdi_to_excel(cdi_dict)
         except Exception as e:
@@ -161,7 +172,7 @@ class Pipeline:
                     if not self._ipca_has_been_processed(date_obj):
                         # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                         value = value / 100
-                        self._save_raw(value, "ipca", date_obj)
+                        self._save_raw(value, date_obj, self.raw_ipca_storage)
                         ipca_dict = self._transform_ipca(value, date_obj)
                         self._load_ipca_to_excel(ipca_dict)
         except Exception as e:
@@ -227,8 +238,8 @@ class Pipeline:
                         # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                         value = value / 100
                         yearly_value = yearly_value / 100
-                        self._save_raw(value, "monthly_cdi", date_obj)
-                        self._save_raw(yearly_value, "yearly_cdi", date_obj)
+                        self._save_raw(value, date_obj, self.raw_monthly_cdi_storage)
+                        self._save_raw(yearly_value, date_obj, self.raw_yearly_cdi_storage)
                         cdi_dict = self._transform_cdi(value, yearly_value, date_obj)
                         self._load_cdi_to_excel(cdi_dict)
                         filled_count += 1
@@ -245,7 +256,7 @@ class Pipeline:
                     if month_start not in ipca_processed_dates:
                         # A API retorna o valor em porcentagem, então dividimos por 100 para obter o valor decimal
                         value = value / 100
-                        self._save_raw(value, "ipca", date_obj)
+                        self._save_raw(value, date_obj, self.raw_ipca_storage)
                         ipca_dict = self._transform_ipca(value, date_obj)
                         self._load_ipca_to_excel(ipca_dict)
                         filled_count += 1
@@ -297,23 +308,9 @@ class Pipeline:
 
 
     @staticmethod
-    def _save_raw(data: float, name: str, dt: datetime) -> str:
-        """Salva os dados brutos obtidos em um arquivo JSON."""
-        folder = pr_root / "data" / "raw" / name
-        folder.mkdir(parents=True, exist_ok=True)
-
-        filepath = folder / f"{name}_{dt.strftime("%Y-%m")}.json"
-
-        payload = {
-            "reference_date": f"{dt.strftime("%Y-%m")}",
-            "type": name,
-            "value": data
-        }
-
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-
-        return str(filepath)
+    def _save_raw(data: float, dt: datetime, storage: BaseRawStorage) -> str:
+        """Salva os dados brutos obtidos em um arquivo."""
+        return storage.save(data, dt.strftime("%Y-%m"))
 
     # ============================
     #  TRANSFORM
@@ -334,17 +331,11 @@ class Pipeline:
     #  LOAD
     # ============================
 
-    # Desabilitado por enquanto para encaixar melhor com os loaders específicos para cada dado
-    # def _load(self, new_row):
-    #     self.loaders[self.persistence_mode](new_row)
-    #     return
-
-
     def _load_cdi_to_excel(self, new_row: dict[str, float | int]):
         """Carrega os dados de CDI para o Excel."""
-        self.cdi_storage.register_data(new_row)
+        self.processed_cdi_storage.register_data(new_row)
 
 
     def _load_ipca_to_excel(self, new_row: dict[str, float | int]):
         """Carrega os dados de IPCA para o Excel."""
-        self.ipca_storage.register_data(new_row)
+        self.processed_ipca_storage.register_data(new_row)

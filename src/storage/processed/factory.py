@@ -1,25 +1,24 @@
-# src/storage/factory.py
 from pathlib import Path
 from typing import Callable
 import pandas as pd
-from src.storage.base import BaseStorage
-from src.storage.excel_storage import ExcelStorage
+from src.storage.processed.base import BaseProcessedStorage
+from src.storage.processed.excel_storage import ExcelProcessedStorage
 
 
-class StorageFactory:
+class ProcessedStorageFactory:
 
     @staticmethod
     def create_storage(
             storage_type: str,
             filepath: Path,
             schema_func: Callable[[], pd.DataFrame]
-    ) -> BaseStorage:
+    ) -> BaseProcessedStorage:
         storage_map = {
-            "excel": ExcelStorage,
+            "excel": ExcelProcessedStorage,
         }
 
         storage_class = storage_map.get(storage_type.lower())
         if not storage_class:
-            raise ValueError(f"Unknown storage type: {storage_type}")
+            raise ValueError(f"Tipo de persistência de dados processados desconhecido: {storage_type}")
 
         return storage_class(filepath, schema_func)

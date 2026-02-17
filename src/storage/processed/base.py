@@ -1,4 +1,3 @@
-# src/storage/base.py
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -6,7 +5,7 @@ from typing import Any
 import pandas as pd
 
 
-class BaseStorage(ABC):
+class BaseProcessedStorage(ABC):
 
     @abstractmethod
     def create_sheet(self) -> pd.DataFrame:
