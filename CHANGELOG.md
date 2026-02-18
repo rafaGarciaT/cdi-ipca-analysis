@@ -7,6 +7,12 @@ e está conforme [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado
+- Primeiros notebooks de demonstração e análise de dados.
+
+### Modificado
+- Arquitetura da Pipeline e de todas suas camadas. Permitindo maior flexibilidade e escalabilidade.
+
 
 ## [0.1.0] - 2026-01-20
 

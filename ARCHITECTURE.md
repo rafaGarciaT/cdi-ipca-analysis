@@ -412,17 +412,17 @@ Objetivo: Integrar com outras aplicações
 - [ ] Revisão dos métodos de execução
 - [ ] Estrutura de fetchs escalável e modular
 - [ ] Estrutura de persistência modular e escalável
+- [ ] Estrutura da pipeline escalável
 - [ ] Cálculo de todas as mensurações de CDI e IPCA
 - [ ] Testes automatizados (pytest)
-- [ ] Análises e dashboards básicos
+- [ ] Notebooks de demonstração e análises básicos
 
-### Versão 0.3.0 
-- [ ] Estrutura da pipeline escalável
+### Versão 0.3.0
 - [ ] Metadados na persistência
-- [ ] Persistência em SQLite
+- [ ] Mais opções de persistência de dados brutos e processados (SQLite, PostgreSQL)
 - [ ] Scripts de automação de execução 
 - [ ] Mais indicadores
-- [ ] Planilhas e notebooks de demonstração
+- [ ] Dashboards
 - [ ] Logs de execução
 
 ### Versões 0.4.0 < 
@@ -441,5 +441,5 @@ Objetivo: Integrar com outras aplicações
 ---
 
 **Documentação visual mantida por:** rafaGarciaT
-**Última atualização:** Janeiro 2026
+**Última atualização:** Fevereiro 2026
 
