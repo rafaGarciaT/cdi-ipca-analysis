@@ -2,6 +2,7 @@ from datetime import datetime
 from src.fetch import get_monthly_cdi_rate, get_yearly_cdi_rate, get_monthly_ipca
 from src.storage import RawStorageFactory, ProcessedStorageFactory, cdi_schema, ipca_schema, JsonRawStorage, \
     BaseRawStorage
+from src.transform.base_transform import calc_accumulated_ytd_rate
 from src.utils.date_utils import date_info, is_business_day
 from src.config import pr_root, BCB_API_DATE_FORMAT
 
@@ -316,16 +317,45 @@ class Pipeline:
     #  TRANSFORM
     # ============================
 
-    @staticmethod
-    def _transform_cdi(cdi_monthly_rate: float, cdi_annual_rate: float, dt: datetime) -> dict[str, float | int]:
+    def _transform_cdi(self, cdi_monthly_rate: float, cdi_annual_rate: float, dt: datetime) -> dict[str, float | int]:
         """Transforma os dados brutos de CDI em um dicionário estruturado para o load."""
-        return {"date": dt.strftime("%Y-%m"), "cdi_annual_rate": cdi_annual_rate, "cdi_monthly_rate": cdi_monthly_rate}
+        cdi_monthly_rates_so_far = self.raw_monthly_cdi_storage.get_values_until(str(dt.year), dt.strftime("%Y-%m"))
+        all_rates = cdi_monthly_rates_so_far
 
+        if len(cdi_monthly_rates_so_far) < 12:
+            previous_year_rates = self.raw_monthly_cdi_storage.get_values_until(str(dt.year - 1), f"{dt.year - 1}-12")
+            all_rates = (previous_year_rates + cdi_monthly_rates_so_far)[-12:]
 
-    @staticmethod
-    def _transform_ipca(ipca_monthly_rate: float, dt: datetime) -> dict[str, float | int]:
+        last_12_months_cdi = all_rates if len(all_rates) == 12 else None
+
+        cdi_accumulated_ytd_rate = calc_accumulated_ytd_rate(cdi_monthly_rates_so_far)
+        cdi_12m_rate = calc_accumulated_ytd_rate(last_12_months_cdi) if last_12_months_cdi else float('nan')
+        return {
+            "date": dt.strftime("%Y-%m"),
+            "cdi_annual_rate": cdi_annual_rate,
+            "cdi_monthly_rate": cdi_monthly_rate,
+            "cdi_accumulated_ytd_rate": cdi_accumulated_ytd_rate,
+            "cdi_12m_rate": cdi_12m_rate
+        }
+
+    def _transform_ipca(self, ipca_monthly_rate: float, dt: datetime) -> dict[str, float | int]:
         """Transforma os dados brutos de IPCA em um dicionário estruturado para o load."""
-        return {"date": dt.strftime("%Y-%m"), "ipca_monthly_rate": ipca_monthly_rate}
+        ipca_monthly_rates_so_far = self.raw_ipca_storage.get_values_until(str(dt.year), dt.strftime("%Y-%m"))
+        all_rates = ipca_monthly_rates_so_far
+
+        if len(ipca_monthly_rates_so_far) < 12:
+            previous_year_rates = self.raw_ipca_storage.get_values_until(str(dt.year - 1), f"{dt.year - 1}-12")
+            all_rates = (previous_year_rates + ipca_monthly_rates_so_far)[-12:]
+
+        last_12_months_ipca = all_rates if len(all_rates) == 12 else None
+
+        ipca_accumulated_ytd_rate = calc_accumulated_ytd_rate(ipca_monthly_rates_so_far)
+        ipca_12m_rate = calc_accumulated_ytd_rate(last_12_months_ipca) if last_12_months_ipca else float('nan')
+        return {"date": dt.strftime("%Y-%m"),
+                "ipca_monthly_rate": ipca_monthly_rate,
+                "ipca_accumulated_ytd_rate": ipca_accumulated_ytd_rate,
+                "ipca_12m_rate": ipca_12m_rate
+        }
 
     # ============================
     #  LOAD
