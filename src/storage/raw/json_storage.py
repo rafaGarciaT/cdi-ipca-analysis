@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from typing import List
 from src.config import pr_root
 from src.storage.raw.schema import RawDataPayload
@@ -41,10 +40,11 @@ class JsonRawStorage:
         files = sorted(self.base_path.glob(f"{self.data_type}_{year}-*.json"))
 
         for file in files:
-            if stop_date in file.name:
-                break
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 values.append(data["value"])
+
+            if stop_date in file.name:
+                break
 
         return values
