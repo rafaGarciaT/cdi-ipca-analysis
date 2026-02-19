@@ -1,17 +1,20 @@
 import json
+from abc import ABC
+from datetime import datetime
 from typing import List
 from src.config import pr_root
+from src.storage.raw.base import BaseRawStorage
 from src.storage.raw.schema import RawDataPayload
 
 
-class JsonRawStorage:
+class JsonRawStorage(BaseRawStorage):
     """Gerencia leitura de dados brutos em JSON."""
 
     def __init__(self, data_type: str):
         self.data_type = data_type
         self.base_path = pr_root / "data" / "raw" / data_type
 
-    def save(self, data: float, reference_date: str) -> str:
+    def save(self, data: float | dict, reference_date: str) -> str:
         """Salva os dados brutos obtidos em um arquivo JSON."""
         self.base_path.mkdir(parents=True, exist_ok=True)
 
@@ -48,3 +51,12 @@ class JsonRawStorage:
                 break
 
         return values
+
+    def get_collected_values(self, raw_dir) -> set:
+        processed_dates = set()
+        for file in raw_dir.glob("*.json"):
+            parts = file.stem.split("_")[-1].split("-")
+            if len(parts) == 2:
+                year, month = int(parts[0]), int(parts[1])
+                processed_dates.add(datetime(year, month, 1))
+        return processed_dates

@@ -28,8 +28,7 @@ def clear_data_folders() -> None:
     """Limpa o conteúdo das pastas de dados brutos e processados."""
     folders_to_clear = [
         "data/processed",
-        "data/raw/monthly_cdi",
-        "data/raw/yearly_cdi",
+        "data/raw/cdi",
         "data/raw/ipca"
     ]
 

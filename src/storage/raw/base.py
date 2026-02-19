@@ -15,3 +15,7 @@ class BaseRawStorage(ABC):
     @abstractmethod
     def get_values_until(self, year: str, stop_date: str) -> list[float]:
         pass
+
+    @abstractmethod
+    def get_collected_values(self, raw_dir)-> set:
+        pass
