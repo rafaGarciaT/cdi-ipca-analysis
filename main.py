@@ -63,15 +63,11 @@ def main():
     args = parser.parse_args()
 
     if args.clear_data_only:
-        print("Limpando pastas de dados...")
         clear_data_folders()
-        print("Pastas limpas com sucesso!")
         sys.exit(0)
 
     if args.clear_data:
-        print("Limpando pastas de dados...")
         clear_data_folders()
-        print("Pastas limpas com sucesso!")
 
     if not args.mode:
         parser.error("--mode é obrigatório (escolha: month, yearly, backfill)")
@@ -87,7 +83,6 @@ def main():
             parser.error("--end-year deve ser maior ou igual a --year")
 
         for year in range(start_year, end_year + 1):
-            print(f"\n=== Processando ano {year} ===")
             pipeline = Pipeline(
                 processed_persistence_mode=args.persistence,
                 execution_mode=args.mode,
@@ -95,7 +90,6 @@ def main():
             )
             pipeline.run()
     else:
-        # Comportamento normal para outros modos
         pipeline = Pipeline(
             processed_persistence_mode=args.persistence,
             execution_mode=args.mode,

@@ -1,17 +1,19 @@
 import shutil
 from pathlib import Path
+from src.utils.logger import Logger
 
+logger = Logger("dir_utils")
 
 def clear_folder_contents(folder_path: str) -> None:
     """Deleta todos os arquivos e subpastas dentro da pasta especificada."""
     folder = Path(folder_path)
 
     if not folder.exists():
-        print(f"A pasta {folder_path} não existe.")
+        logger.warning(f"A pasta {folder_path} não existe.")
         return
 
     if not folder.is_dir():
-        print(f"{folder_path} não é uma pasta.")
+        logger.warning(f"{folder_path} não é uma pasta.")
         return
 
     for item in folder.iterdir():
@@ -21,7 +23,7 @@ def clear_folder_contents(folder_path: str) -> None:
             elif item.is_dir():
                 shutil.rmtree(item)
         except Exception as e:
-            print(f"Erro ao deletar {item}: {e}")
+            logger.warning(f"Erro ao deletar {item}: {e}")
 
 
 def clear_data_folders() -> None:
@@ -32,8 +34,9 @@ def clear_data_folders() -> None:
         "data/raw/ipca"
     ]
 
+    logger.info(f"Iniciando limpeza das pastas: {', '.join(folders_to_clear)}")
+
     for folder in folders_to_clear:
-        print(f"Limpando pasta: {folder}")
         clear_folder_contents(folder)
 
-    print("Limpeza concluída.")
+    logger.info(f"Limpeza concluida")
