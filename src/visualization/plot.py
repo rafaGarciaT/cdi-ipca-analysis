@@ -16,7 +16,7 @@ def format_months(month_series, year_series=None):
     return formatted
 
 
-def format_rate(x):
+def format_rate(x, pos):
     return f"{x:.0f}%"
 
 
