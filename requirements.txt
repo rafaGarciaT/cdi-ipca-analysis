@@ -1,12 +1,24 @@
-pytest
-colorama
+# Core Dependencies - Pipeline ETL
 pandas>=3.0.0
 requests>=2.31.0
 openpyxl>=3.1.0
 python-dateutil>=2.8.2
 numpy>=1.24.0
+
+# Visualization
 matplotlib>=3.5.0
 
-# Para testes
+# Logging
+colorama>=0.4.6
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Security Audit
 pip-audit>=2.6.0
+
+# Jupyter Notebooks
+jupyter>=1.0.0
+ipykernel>=6.0.0
 

@@ -5,37 +5,46 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 
-Este projeto implementa uma Pipeline automatizada para coleta, processamento e análise de indicadores econômicos brasileiros (atualmente, CDI e IPCA). 
-Ele busca dados diretamente da API oficial do Banco Central do Brasil (BCB), processa as informações e armazena em formato Excel para análise posterior.
+Este projeto implementa uma Pipeline automatizada para coleta, processamento e armazenamento de indicadores econômicos brasileiros (atualmente, CDI e IPCA). 
+Ele é feito para ser uma ferramenta de análise e monitoramento para todos os interessados em acompanhar a evolução desses indicadores. 
+Junto com a pipeline, são fornecidos notebooks Jupyter com análises exploratórias e visualizações dos dados coletados.
 
 ## Funcionalidades
-- ✅ Coleta automática de dados da taxa CDI mensal anual
+- ✅ Coleta automática de dados da taxa CDI mensal e anual
 - ✅ Coleta automática de dados da taxa IPCA mensal
 - ✅ Armazenamento de dados brutos em JSON
 - ✅ Persistência de dados processados em Excel
+- ✅ Cálculo de taxas acumuladas no ano e dos últimos 12 meses
 - ✅ Modos de execução para coleta mensal, anual e para preenchimento de lacunas
+- ✅ Notebooks Jupyter para análise exploratória
 
 
 ## Funcionalidades Planejadas
 - Suporte a persistência em SQLite e PostgreSQL
-- Adição do indicador SELIC
-- Integração com dashboards
-- Testes unitários e de integração
-- Notebooks Jupyter para análise exploratória
-- Criação de dashboards interativos
+- Adição de mains indicadores econômicos (Selic, IGP-M, etc.)
 - Automação via agendadores (cron, task scheduler)
 
 ## Requisitos e Dependências
 - Python 3.8+
 
-- pandas
-- requests
-- openpyxl
-- python-dateutil
-- numpy
+### Dependências principais:
+- pandas>=3.0.0
+- requests>=2.31.0
+- openpyxl>=3.1.0
+- python-dateutil>=2.8.2
+- numpy>=1.24.0
+- matplotlib>=3.5.0
+- colorama>=0.4.4
+
+### Dependências de desenvolvimento:
+- pytest>=7.0.0
+- pytest-cov>=4.0.0
+- pip-audit>=2.6.0
+- jupyter>=1.0.0
+- ipykernel>=6.0.0
 
 ```bash
-pip install pandas requests openpyxl python-dateutil numpy
+pip install -r requirements.txt
 ```
 
 ## Uso
@@ -43,7 +52,7 @@ Clone o repositório, instale as dependências e considere criar um ambiente vir
 
 ### Execução Básica
 ```bash
-python main.py
+py main.py
 ```
 
 Este comando executa a pipeline no modo padrão (`month`) com persistência em Excel.
@@ -63,12 +72,14 @@ chmod +x scripts/run_pipeline.sh
 Abaixo estão detalhados os argumentos disponíveis para personalizar a execução.
 
 ###  Argumentos do CLI
-| Argumento       | Tipo   | Padrão  | Descrição                                                                |
-|-----------------|--------|---------|--------------------------------------------------------------------------|
-| `--mode`        | string | `month` | Modo de execução: `month`, `yearly`, `backfill`                          |
-| `--persistence` | string | `excel` | Modo de persistência: `excel`, `sqlite` (em desenvolvimento)             |
-| `--year`        | int    | -       | Ano alvo (opcional para modo `yearly`, ano atual selecionado se ausente) |
-| `--clear-data`  | flag   | -       | Limpa as pastas de dados brutos processados antes de executar            |
+| Argumento           | Tipo   | Padrão  | Descrição                                                            |
+|---------------------|--------|---------|----------------------------------------------------------------------|
+| `--mode`            | string | `month` | Modo de execução: `month`, `yearly`, `backfill`                      |
+| `--persistence`     | string | `excel` | Modo de persistência: `excel`, `sqlite` (em desenvolvimento)         |
+| `--year`            | int    | -       | Ano alvo para o modo `yearly`                                        |
+| `--end-year`        | int    | -       | Ano final para processamento de range (opcional, usado com `--year`) |
+| `--clear-data`      | flag   | -       | Limpa as pastas de dados brutos e processados antes de executar      |
+| `--clear-data-only` | flag   | -       | Apenas limpa as pastas de dados sem executar a pipeline              |
 
 ### Modos de Execução
 1. `month`: Coleta e processa dados do mês atual.
@@ -115,6 +126,7 @@ A pipeline segue o padrão ETL (Extract, Transform, Load):
    - Salva dados brutos em JSON
 
 2. **Transform**
+   - Conversão de porcentagens para decimais
    - Calcula fator diário do CDI
    - Calcula taxas acumuladas
    - Formata dados para persistência
@@ -133,5 +145,7 @@ A Pipeline possui tratamento de erros para:
 - Dados já processados
 - Erros de persistência
 
+## Changelog
 
+Para histórico completo de alterações, consulte [CHANGELOG.md](CHANGELOG.md).
 

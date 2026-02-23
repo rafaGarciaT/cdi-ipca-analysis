@@ -5,34 +5,45 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 
-This project implements an automated pipeline for collecting, processing, and analyzing Brazilian economic indicators (currently CDI and IPCA). It fetches data directly from the official Central Bank of Brazil (BCB) API, processes the information, and stores it in Excel format for further analysis.
+This project implements an automated Pipeline for collecting, processing, and storing Brazilian economic indicators (currently CDI and IPCA). 
+It is designed to be an analysis and monitoring tool for anyone interested in tracking the evolution of these indicators. 
+Along with the pipeline, Jupyter notebooks are provided with exploratory analysis and visualizations of the collected data.
 
 ## Features
-- ✅ Automatic collection of monthly and annual CDI data
-- ✅ Automatic collection of monthly IPCA data
+- ✅ Automatic collection of monthly and annual CDI rates
+- ✅ Automatic collection of monthly IPCA rates
 - ✅ Raw data storage in JSON
 - ✅ Processed data persistence in Excel
-- ✅ Execution modes for monthly, yearly, and backfill collection
+- ✅ Calculation of year-to-date and 12-month accumulated rates
+- ✅ Execution modes for monthly, yearly, and gap-filling collection
+- ✅ Jupyter notebooks for exploratory analysis
 
 ## Planned Features
 - Support for SQLite and PostgreSQL persistence
-- Addition of SELIC indicator
-- Dashboard integration
-- Unit and integration tests
-- Jupyter notebooks for exploratory analysis
-- Interactive dashboard creation
+- Addition of more economic indicators (SELIC, IGP-M, etc.)
 - Automation via schedulers (cron, task scheduler)
 
 ## Requirements and Dependencies
 - Python 3.8+
-- pandas
-- requests
-- openpyxl
-- python-dateutil
-- numpy
+
+### Main Dependencies:
+- pandas>=3.0.0
+- requests>=2.31.0
+- openpyxl>=3.1.0
+- python-dateutil>=2.8.2
+- numpy>=1.24.0
+- matplotlib>=3.5.0
+- colorama>=0.4.4
+
+### Development Dependencies:
+- pytest>=7.0.0
+- pytest-cov>=4.0.0
+- pip-audit>=2.6.0
+- jupyter>=1.0.0
+- ipykernel>=6.0.0
 
 ```bash
-pip install pandas requests openpyxl python-dateutil numpy
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -60,12 +71,14 @@ chmod +x scripts/run_pipeline.sh
 Below are the available arguments to customize execution.
 
 ### CLI Arguments
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--mode` | string | `month` | Execution mode: `month`, `yearly`, `backfill` |
-| `--persistence` | string | `excel` | Persistence mode: `excel`, `sqlite` (in development) |
-| `--year` | int | - | Target year (optional for `yearly` mode, current year selected if absent) |
-| `--clear-data` | flag | - | Clears raw and processed data folders before execution |
+| Argument            | Type   | Default | Description                                                          |
+|---------------------|--------|---------|----------------------------------------------------------------------|
+| `--mode`            | string | `month` | Execution mode: `month`, `yearly`, `backfill`                        |
+| `--persistence`     | string | `excel` | Persistence mode: `excel`, `sqlite` (in development)                 |
+| `--year`            | int    | -       | Target year for `yearly` mode                                        |
+| `--end-year`        | int    | -       | End year for range processing (optional, used with `--year`)         |
+| `--clear-data`      | flag   | -       | Clears raw and processed data folders before execution               |
+| `--clear-data-only` | flag   | -       | Only clears data folders without executing the pipeline              |
 
 ### Execution Modes
 1. `month`: Collects and processes current month data.
@@ -91,13 +104,12 @@ See the [ARCHITECTURE.md](ARCHITECTURE.md) file for details about the project ar
 ### Data Source
 The project uses the following time series from the BCB API:
 
-### CDI
-- **Series 12**: CDI Interest Rate (%a.d) (not used)
+#### CDI
 - **Series 4391**: Accumulated Monthly CDI (% p.m.)
 - **Series 4392**: Accumulated Annual CDI (% p.a.)
 - **Endpoint**: `https://api.bcb.gov.br/dados/serie/bcdata.sgs.{serie}/dados`
 
-### IPCA
+#### IPCA
 - **Series 433**: Monthly IPCA (%)
 - **Endpoint**: `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados`
 
@@ -112,6 +124,7 @@ The pipeline follows the ETL (Extract, Transform, Load) pattern:
    - Saves raw data in JSON
 
 2. **Transform**
+   - Converts percentages to decimals
    - Calculates daily CDI factor
    - Calculates accumulated rates
    - Formats data for persistence
@@ -129,6 +142,10 @@ The pipeline has error handling for:
 - Non-business days
 - Already processed data
 - Persistence errors
+
+## Changelog
+
+For complete change history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## 📄 License
 
