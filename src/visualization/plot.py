@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 
