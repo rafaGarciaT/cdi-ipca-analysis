@@ -17,14 +17,33 @@ class ColoredFormatter(logging.Formatter):
         'CRITICAL': Fore.RED + Style.BRIGHT,
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
+        """Adiciona cores ao nível do log para saída no console.
+
+        Args:
+            record (logging.LogRecord): O registro de log a ser formatado.
+
+        Returns:
+            str: A string formatada do registro de log, com cores aplicadas ao nível.
+        """
         if record.levelname in self.COLORS:
             record.levelname = f"{self.COLORS[record.levelname]}{record.levelname}{Style.RESET_ALL}"
         return super().format(record)
 
 
 class Logger:
-    def __init__(self, name: str, log_dir: Path = None):
+    """Classe de logger personalizada para o pipeline, com suporte a logs em arquivo e console colorido.
+
+    Attributes:
+        logger (logging.Logger): O objeto logger do Python utilizado para registrar mensagens de log.
+    """
+    def __init__(self, name: str, log_dir: Path = None) -> None:
+        """Inicializa o logger, configurando os handlers para arquivo e console.
+
+        Args:
+            name (str): O nome do logger, geralmente o nome do módulo ou classe que o utiliza.
+            log_dir (Path, optional): O diretório onde os arquivos de log serão armazenados. Se não for fornecido, será criado um diretório "logs" no local do script.
+        """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
 
