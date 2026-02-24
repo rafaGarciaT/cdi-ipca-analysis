@@ -22,3 +22,10 @@ pip-audit>=2.6.0
 jupyter>=1.0.0
 ipykernel>=6.0.0
 
+# Dashboards
+Babel
+dash
+dash-bootstrap-components
+pandas-stubs
+plotly
+python-i18n
