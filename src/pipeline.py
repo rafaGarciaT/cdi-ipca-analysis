@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.indicators.baser import BaseIndicator
+from src.indicators.base import BaseIndicator
 from src.indicators.cdi_indicator import CDIIndicator
 from src.indicators.ipca_indicator import IPCAIndicator
 from src.storage import RawStorageFactory, ProcessedStorageFactory, cdi_schema, ipca_schema

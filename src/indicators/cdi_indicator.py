@@ -1,5 +1,5 @@
 from src.config import BCB_API_DATE_FORMAT
-from src.indicators.baser import BaseIndicator
+from src.indicators.base import BaseIndicator
 from src.fetch import get_monthly_cdi_rate, get_yearly_cdi_rate
 from src.storage import BaseRawStorage, BaseProcessedStorage
 from src.transform.base_transform import calc_accumulated_ytd_rate

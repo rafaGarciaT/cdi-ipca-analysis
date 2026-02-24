@@ -5,7 +5,7 @@ from pathlib import Path
 import importlib
 from unittest.mock import Mock
 
-from src.indicators.baser import BaseIndicator
+from src.indicators.base import BaseIndicator
 from src.storage.processed.excel_storage import ExcelProcessedStorage
 
 # Dicionário de configuração para cada indicator
@@ -33,7 +33,7 @@ class TestIndicatorContracts:
         indicator_classes = []
 
         for file in indicators_path.glob("*_indicator.py"):
-            if file.name == "baser.py":
+            if file.name == "base.py":
                 continue
 
             module_name = f"src.indicators.{file.stem}"
