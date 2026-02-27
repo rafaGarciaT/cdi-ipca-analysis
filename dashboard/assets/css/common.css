@@ -1,0 +1,67 @@
+/* ============================================
+   COMMON STYLES - Used across all dashboards
+   ============================================ */
+
+/* Typography */
+.label-bold {
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* Input Wrappers */
+.currency-input input {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+}
+
+.compact-input {
+    max-width: 200px;
+}
+
+/* Buttons */
+.btn-calculate {
+    padding: 10px 30px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-calculate:hover {
+    background-color: #0056b3;
+}
+
+.btn-calculate:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Tables */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Result containers */
+.result-container {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .compact-input {
+        max-width: 100%;
+    }
+}

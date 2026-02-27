@@ -9,6 +9,8 @@ class ComponentID:
     def __str__(self) -> str:
         return self.value
 
+class InputIDs:
+    INITIAL_AMOUNT = ComponentID("initial-amount")
 
 class DropdownIDs:
     pass
@@ -19,4 +21,8 @@ class GraphIDs:
 
 
 class ButtonIDs:
-    pass
+    CALCULATE = ComponentID("calculate-button")
+
+class DatePickerIDs:
+    START_YEAR = ComponentID("start-year")
+    END_YEAR = ComponentID("end-year")
