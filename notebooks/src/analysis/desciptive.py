@@ -3,7 +3,6 @@ from typing import Iterable, List
 
 
 def _validate(data: Iterable[float]) -> Iterable[float]:
-    """Valida os dados de entrada, garantindo que sejam uma lista de números e não vazia."""
     values = list(data)
     if len(values) == 0:
         raise ValueError("Lista deve conter pelo menos um número.")
