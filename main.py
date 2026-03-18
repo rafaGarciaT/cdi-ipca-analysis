@@ -31,7 +31,7 @@ def main():
     parser.add_argument(
         '--persistence',
         type=str,
-        choices=['excel', 'sqlite'],
+        choices=['excel', 'sqlite', 'csv'],
         default='excel',
         help='Modo de persistência dos dados (padrão: excel)'
     )

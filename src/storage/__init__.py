@@ -1,3 +1,5 @@
+from src.storage.processed.csv_storage import CsvProcessedStorage
+from src.storage.processed.sqlite_storage import SQLiteProcessedStorage
 from src.storage.raw.base import BaseRawStorage
 from src.storage.raw.factory import RawStorageFactory
 from src.storage.raw.json_storage import JsonRawStorage
@@ -15,6 +17,8 @@ __all__ = [
 
     "BaseProcessedStorage",
     "ExcelProcessedStorage",
+    "SQLiteProcessedStorage",
+    "CsvProcessedStorage",
     "ProcessedStorageFactory",
 
     "cdi_schema",

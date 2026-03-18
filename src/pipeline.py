@@ -55,7 +55,18 @@ class Pipeline:
         Returns:
             list: Lista de instâncias de indicadores configurados.
         """
-        ext = "xlsx" if processed_mode == "excel" else "csv"
+        mode = processed_mode.lower()
+
+        ext_map = {
+            "excel": "xlsx",
+            "csv": "csv",
+            "sqlite": "db",
+        }
+
+        if mode not in ext_map:
+            raise ValueError(f"Unsupported processed persistence mode: {processed_mode}")
+
+        ext = ext_map[mode]
 
         cdi_indicator = CDIIndicator(
             raw_storage=RawStorageFactory.create_storage(raw_mode, "cdi"),

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable
 import pandas as pd
 from src.storage.processed.base import BaseProcessedStorage
+from src.storage.processed.csv_storage import CsvProcessedStorage
 from src.storage.processed.excel_storage import ExcelProcessedStorage
 from src.storage.processed.sqlite_storage import SQLiteProcessedStorage
 
@@ -22,7 +23,8 @@ class ProcessedStorageFactory:
         """
         storage_map = {
             "excel": ExcelProcessedStorage,
-            "sqlite": SQLiteProcessedStorage
+            "sqlite": SQLiteProcessedStorage,
+            "csv": CsvProcessedStorage,
         }
 
         storage_class = storage_map.get(storage_type.lower())
